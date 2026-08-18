@@ -42,6 +42,17 @@ const HANGUL_CONSONANTS = [
   { char: "ㅉ", romaja: "jj", kana: "ッチュ" },
 ];
 
+// パッチム(받침/終声): 文字の下につく2つ目の子音。表記は多様だが、発音は代表的な7種類に集約される
+const BATCHIM_EXAMPLES = [
+  { jong: "ㄱ", romaja: "k", group: "ㄱ・ㅋ・ㄲ", example: "학교", exampleYomi: "ハッキョ", exampleJp: "学校" },
+  { jong: "ㄴ", romaja: "n", group: "", example: "눈", exampleYomi: "ヌン", exampleJp: "雪・目" },
+  { jong: "ㄷ", romaja: "t", group: "ㄷ・ㅅ・ㅈ・ㅊ・ㅌ・ㅎ・ㅆ", example: "옷", exampleYomi: "オッ", exampleJp: "服" },
+  { jong: "ㄹ", romaja: "l", group: "", example: "물", exampleYomi: "ムル", exampleJp: "水" },
+  { jong: "ㅁ", romaja: "m", group: "", example: "김치", exampleYomi: "キムチ", exampleJp: "キムチ" },
+  { jong: "ㅂ", romaja: "p", group: "ㅂ・ㅍ", example: "밥", exampleYomi: "パプ", exampleJp: "ご飯" },
+  { jong: "ㅇ", romaja: "ng", group: "", example: "공항", exampleYomi: "コンハン", exampleJp: "空港" },
+];
+
 // 가나다표(カナダ表): 日本語の五十音図に相当する、子音×母音の組み合わせ表
 // 行=基本子音14、列=基本母音10
 const GANADA_ROW_CONSONANTS = [
@@ -236,6 +247,75 @@ const WORD_CATEGORIES = [
       { kr: "재미있어요", yomi: "チェミイッソヨ", jp: "面白いです" },
     ],
   },
+  {
+    id: "restaurant",
+    name: "食事・注文",
+    words: [
+      { kr: "메뉴판 주세요", yomi: "メニュパン ジュセヨ", jp: "メニューをください" },
+      { kr: "주문할게요", yomi: "チュムンハルケヨ", jp: "注文します" },
+      { kr: "물 좀 주세요", yomi: "ムル チョム ジュセヨ", jp: "お水をください" },
+      { kr: "여기요!", yomi: "ヨギヨ!", jp: "すみません!(店員を呼ぶ)" },
+      { kr: "맛있게 드세요", yomi: "マシッケ ドゥセヨ", jp: "お召し上がりください" },
+      { kr: "계산해 주세요", yomi: "ケサネ ジュセヨ", jp: "お会計お願いします" },
+      { kr: "포장해 주세요", yomi: "ポジャンヘ ジュセヨ", jp: "持ち帰りでお願いします" },
+      { kr: "맵지 않아요?", yomi: "メプチ アナヨ?", jp: "辛くないですか?" },
+    ],
+  },
+  {
+    id: "direction",
+    name: "道案内",
+    words: [
+      { kr: "길", yomi: "キル", jp: "道" },
+      { kr: "오른쪽", yomi: "オルンチョク", jp: "右" },
+      { kr: "왼쪽", yomi: "ウェンチョク", jp: "左" },
+      { kr: "똑바로 가세요", yomi: "ットッパロ カセヨ", jp: "まっすぐ行ってください" },
+      { kr: "여기서 가까워요", yomi: "ヨギソ カッカウォヨ", jp: "ここから近いです" },
+      { kr: "여기서 멀어요", yomi: "ヨギソ モロヨ", jp: "ここから遠いです" },
+      { kr: "지도", yomi: "チド", jp: "地図" },
+      { kr: "길을 잃었어요", yomi: "キルル イロッソヨ", jp: "道に迷いました" },
+    ],
+  },
+  {
+    id: "weather",
+    name: "天気",
+    words: [
+      { kr: "날씨", yomi: "ナルシ", jp: "天気" },
+      { kr: "더워요", yomi: "トウォヨ", jp: "暑いです" },
+      { kr: "추워요", yomi: "チュウォヨ", jp: "寒いです" },
+      { kr: "비가 와요", yomi: "ピガ ワヨ", jp: "雨が降ります" },
+      { kr: "눈이 와요", yomi: "ヌニ ワヨ", jp: "雪が降ります" },
+      { kr: "맑아요", yomi: "マルガヨ", jp: "晴れています" },
+      { kr: "흐려요", yomi: "フリョヨ", jp: "曇っています" },
+      { kr: "바람이 많이 불어요", yomi: "パラミ マニ プロヨ", jp: "風が強く吹いています" },
+    ],
+  },
+  {
+    id: "travel",
+    name: "旅行",
+    words: [
+      { kr: "여권", yomi: "ヨグォン", jp: "パスポート" },
+      { kr: "비행기", yomi: "ピヘンギ", jp: "飛行機" },
+      { kr: "호텔", yomi: "ホテル", jp: "ホテル" },
+      { kr: "예약했어요", yomi: "イェヤケッソヨ", jp: "予約しました" },
+      { kr: "짐", yomi: "チム", jp: "荷物" },
+      { kr: "관광", yomi: "クァングァン", jp: "観光" },
+      { kr: "사진 좀 찍어 주세요", yomi: "サジン チョム チゴ ジュセヨ", jp: "写真を撮ってください" },
+    ],
+  },
+  {
+    id: "hobby",
+    name: "趣味",
+    words: [
+      { kr: "취미", yomi: "チュィミ", jp: "趣味" },
+      { kr: "영화", yomi: "ヨンファ", jp: "映画" },
+      { kr: "음악", yomi: "ウマク", jp: "音楽" },
+      { kr: "운동", yomi: "ウンドン", jp: "運動" },
+      { kr: "여행", yomi: "ヨヘン", jp: "旅行" },
+      { kr: "게임", yomi: "ケイム", jp: "ゲーム" },
+      { kr: "그림 그리기", yomi: "クリム クリギ", jp: "絵を描くこと" },
+      { kr: "취미가 뭐예요?", yomi: "チュィミガ ムォエヨ?", jp: "趣味は何ですか?" },
+    ],
+  },
 ];
 
 // 文法レッスン: 語順→助詞→です/だ→ある/いる→動詞の基本形→過去/否定/疑問 の順で
@@ -245,7 +325,7 @@ const GRAMMAR_LESSONS = [
     id: "word-order",
     title: "① 語順の感覚をつかむ",
     explanation:
-      "韓国語は日本語と同じ「主語→目的語→動詞」の順番(SOV)です。英語のような語順の並べ替えを考えなくてよいので、日本語の文をそのまま韓国語の単語に置き換えていく感覚でOKです。",
+      "韓国語は日本語と同じ「主語→目的語→動詞」の順番(SOV)です。英語のように語順を並べ替える必要がなく、日本語の文の単語を1つずつ韓国語に置き換えていくだけで、自然と正しい語順の文になります。ポイントは「動詞・形容詞は必ず文の最後にくる」ということ。日本語で「私は/ご飯を/食べます」の順で言えるなら、韓国語でも同じ順番で「저는/밥을/먹어요」と言えばOKです。慣れないうちは、日本語の助詞(は・を・に など)がどの韓国語の助詞に対応するかを意識しながら、単語を当てはめていく練習をしましょう。",
     points: [
       { pattern: "私は ご飯を 食べます", kr: "저는 밥을 먹어요.", yomi: "チョヌン パブル モゴヨ", jp: "私はご飯を食べます。" },
       { pattern: "私は 学校に 行きます", kr: "저는 학교에 가요.", yomi: "チョヌン ハッキョエ カヨ", jp: "私は学校に行きます。" },
@@ -255,7 +335,7 @@ const GRAMMAR_LESSONS = [
     id: "particles",
     title: "② 助詞(조사)を覚える",
     explanation:
-      "韓国語の助詞は日本語の助詞とほぼ1対1で対応します。直前の文字がパッチム(下に子音がつく文字)で終わるかどうかで形が変わるものが多いです。",
+      "韓国語の助詞は日本語の助詞とほぼ1対1で対応するので、日本語の感覚のまま覚えられます。ただし多くの助詞には2つの形があり、直前の単語がパッチム(文字の下につく子音。詳しくは「ハングル」タブ参照)で終わるかどうかで使い分けます。これは発音をなめらかにするための決まりで、①パッチムで終わる単語には子音で始まる形(은・이・을など)、②母音で終わる単語には子音のない形(는・가・를など)をつける、と覚えておけば迷いません。単語の最後の文字を見て「下に子音がついているかどうか」を確認する癖をつけましょう。",
     points: [
       { pattern: "〜は (パッチムあり→은 / なし→는)", kr: "저는 / 이것은", yomi: "チョヌン / イゴスン", jp: "私は / これは" },
       { pattern: "〜が (パッチムあり→이 / なし→가)", kr: "밥이 / 학교가", yomi: "パビ / ハッキョガ", jp: "ご飯が / 学校が" },
@@ -270,7 +350,7 @@ const GRAMMAR_LESSONS = [
     id: "copula",
     title: "③ 「〜です/〜だ」の言い方",
     explanation:
-      "名詞の後ろに「이에요/예요」をつけると「〜です」になります。直前の文字にパッチムがあれば이에요、なければ예요です。",
+      "名詞の後ろに「이에요/예요」をつけると「〜です」という丁寧な言い方になります。これも助詞と同じ考え方で、直前の文字にパッチムがあれば이에요、なければ예요を使います。これより硬い言い方に「입니다」(ニュースや会議などで使うかしこまった形)もありますが、日常会話では이에요/예요で十分です。「〜ではありません」と否定したいときは「이/가 아니에요」の形になります(例: 学生ではありません→학생이 아니에요)。",
     points: [
       { pattern: "パッチムあり＋이에요", kr: "학생이에요.", yomi: "ハクセンイエヨ", jp: "学生です。" },
       { pattern: "パッチムなし＋예요", kr: "저는 다나카예요.", yomi: "チョヌン タナカエヨ", jp: "私は田中です。" },
@@ -280,7 +360,8 @@ const GRAMMAR_LESSONS = [
   {
     id: "existence",
     title: "④ 「ある/いる・ない/いない」",
-    explanation: "「있어요」で『ある・いる』、「없어요」で『ない・いない』を表します。人にもモノにも同じ単語を使えます。",
+    explanation:
+      "「있어요」で『ある・いる』、「없어요」で『ない・いない』を表します。日本語では「ある」と「いる」を使い分けますが、韓国語は人にもモノにも同じ単語を使うので、むしろシンプルです。さらに「〜を持っています」と言いたいときも、韓国語では「가방이 있어요(カバンがあります)」のように「〜이/가 있어요」の形で表すのが自然です。助詞이/가(〜が)とセットで使うことが多い点も覚えておきましょう。",
     points: [
       { pattern: "〜があります", kr: "시간이 있어요.", yomi: "シガニ イッソヨ", jp: "時間があります。" },
       { pattern: "〜がいます", kr: "친구가 있어요.", yomi: "チングガ イッソヨ", jp: "友達がいます。" },
@@ -291,7 +372,7 @@ const GRAMMAR_LESSONS = [
     id: "verb-basic",
     title: "⑤ 動詞・形容詞の基本の言い方(해요体)",
     explanation:
-      "辞書の見出し語は「〜다」で終わります。この「다」を取って、直前の母音がㅏ/ㅗなら「아요」、それ以外なら「어요」をつけると、日常会話でよく使う丁寧な言い方になります(하다で終わる言葉は해요になります)。",
+      "辞書に載っている単語(辞書形)は必ず「〜다」で終わります。この「다」を取った部分が「語幹」で、そこに語尾をつけて文を作ります。日常会話で最もよく使われる丁寧な言い方が「해요体」で、作り方は①語幹の最後の母音がㅏ/ㅗなら「아요」、②それ以外なら「어요」をつける、の2パターンだけです(하다で終わる言葉は特別に해요になります)。最初は例外(不規則活用)を気にせず、この基本ルールだけでたくさんの文を作れるようになることを目指しましょう。",
     points: [
       { pattern: "가다(行く) → 가요", kr: "가요.", yomi: "カヨ", jp: "行きます。" },
       { pattern: "먹다(食べる) → 먹어요", kr: "먹어요.", yomi: "モゴヨ", jp: "食べます。" },
@@ -302,7 +383,7 @@ const GRAMMAR_LESSONS = [
     id: "past-neg-question",
     title: "⑥ 過去形・否定文・疑問文",
     explanation:
-      "過去形は「아요/어요」を「았어요/었어요」に変えます。否定文は動詞の前に「안」をつけるだけ。疑問文は文末を「？」で上げて発音するだけで作れます(語順を変える必要がありません)。",
+      "過去形は、해요体の「아요/어요」の部分を「았어요/었어요」に変えるだけで作れます(가요→갔어요)。否定文は動詞・形容詞の前に「안」を置くだけで完成します(안 가요=行きません)。「〜지 않아요」という形もありますが意味は同じなので、まずは短い「안」の形から使えるようになれば十分です。疑問文は語順を変える必要がなく、文末を「?」のように上げて発音するだけでOK(書くときは文末に？をつけます)。日本語の「〜ますか?」と同じ感覚で使えます。",
     points: [
       { pattern: "過去形: 가요 → 갔어요", kr: "어제 학교에 갔어요.", yomi: "オジェ ハッキョエ カッソヨ", jp: "昨日学校に行きました。" },
       { pattern: "否定形: 안 + 動詞", kr: "저는 안 가요.", yomi: "チョヌン アン ガヨ", jp: "私は行きません。" },
@@ -312,7 +393,8 @@ const GRAMMAR_LESSONS = [
   {
     id: "want",
     title: "⑦ 「〜したいです」",
-    explanation: "動詞の다を取って「고 싶어요」をつけると「〜したいです」という願望を表せます。日本語の「〜たい」とほぼ同じ感覚で使えます。",
+    explanation:
+      "動詞の다を取って「고 싶어요」をつけると「〜したいです」という自分の願望を表せます。日本語の「〜たい」とほぼ同じ感覚で使えるので、覚えやすい表現です。ただし主語が自分(私・私たち)以外のとき、たとえば「彼は行きたがっています」のように第三者の願望を言う場合は形が少し変わりますが、まずは自分の気持ちを伝える「고 싶어요」から使いこなせるようにしましょう。",
     points: [
       { pattern: "먹다(食べる) → 먹고 싶어요", kr: "김치찌개를 먹고 싶어요.", yomi: "キムチッチゲルル モッコ シポヨ", jp: "キムチチゲが食べたいです。" },
       { pattern: "가다(行く) → 가고 싶어요", kr: "한국에 가고 싶어요.", yomi: "ハングゲ カゴ シポヨ", jp: "韓国に行きたいです。" },
@@ -321,7 +403,8 @@ const GRAMMAR_LESSONS = [
   {
     id: "but",
     title: "⑧ 「〜だけど」(逆接)",
-    explanation: "動詞・形容詞の다を取って「지만」をつけると「〜だけど・〜けれども」という逆接を表せます。前後の内容を対比させたいときに使います。",
+    explanation:
+      "動詞・形容詞の다を取って「지만」をつけると「〜だけど・〜けれども」という逆接を表せます。前後の内容を対比させたいときに使う表現で、助詞のようにパッチムの有無で形が変わることはなく、どんな語幹にもそのまま「지만」をつけるだけなので覚える負担が少ないのが特徴です(있다・없다にもそのまま使えます: 있지만)。",
     points: [
       { pattern: "비싸다(高い) → 비싸지만", kr: "비싸지만 맛있어요.", yomi: "ピッサジマン マシッソヨ", jp: "高いけどおいしいです。" },
       { pattern: "어렵다(難しい) → 어렵지만", kr: "한국어는 어렵지만 재미있어요.", yomi: "ハングゴヌン オリョプチマン チェミイッソヨ", jp: "韓国語は難しいけど面白いです。" },
@@ -330,7 +413,8 @@ const GRAMMAR_LESSONS = [
   {
     id: "because",
     title: "⑨ 「〜なので」(理由)",
-    explanation: "動詞・形容詞の語幹に、最後の母音がㅏ/ㅗなら「아서」、それ以外なら「어서」をつけると「〜なので・〜して」という理由を表せます(過去形にはできない点に注意)。",
+    explanation:
+      "動詞・形容詞の語幹に、⑤で習った해요体と同じルールで(最後の母音がㅏ/ㅗなら「아서」、それ以外なら「어서」)語尾をつけると「〜なので・〜して」という理由を表せます。해요体の作り方が分かっていれば、そのまま応用できる表現です。注意点は、原因・理由を表す部分は過去形にできないこと(「疲れたので」は피곤했어서ではなく피곤해서)。理由はすでに結果の文の中で過去のこととして伝わるので、아서/어서の部分は現在形のまま使います。",
     points: [
       { pattern: "피곤하다(疲れている) → 피곤해서", kr: "피곤해서 집에 가요.", yomi: "ピゴネソ チベ カヨ", jp: "疲れたので家に帰ります。" },
       { pattern: "배고프다(お腹が空いている) → 배고파서", kr: "배고파서 밥을 먹어요.", yomi: "ペゴパソ パブル モゴヨ", jp: "お腹が空いたのでご飯を食べます。" },
@@ -339,7 +423,8 @@ const GRAMMAR_LESSONS = [
   {
     id: "can",
     title: "⑩ 「〜できます/できません」",
-    explanation: "動詞の다を取って「을 수 있어요(できます)」「을 수 없어요(できません)」をつけると可能・不可能を表せます。パッチムがなければ「ㄹ 수」になります。",
+    explanation:
+      "動詞の다を取った語幹に「을 수 있어요(できます)」「을 수 없어요(できません)」をつけると、可能・不可能を表せます。ここでも助詞と同じく、語幹の最後にパッチムがあれば「을 수」、なければ「ㄹ 수」を使う使い分けが登場します。後ろにつく있어요/없어요は④で覚えた「ある/ない」と同じ単語なので、新しく覚えることは「을 수」「ㄹ 수」という可能性を表す部分だけ、と考えると負担が少なくなります。",
     points: [
       { pattern: "하다(する) → 할 수 있어요", kr: "한국어를 할 수 있어요.", yomi: "ハングゴルル ハル ス イッソヨ", jp: "韓国語ができます。" },
       { pattern: "먹다(食べる) → 먹을 수 없어요", kr: "매운 음식을 먹을 수 없어요.", yomi: "メウン ウムシグル モグル ス オプソヨ", jp: "辛い食べ物が食べられません。" },
@@ -347,25 +432,28 @@ const GRAMMAR_LESSONS = [
   },
 ];
 
-// 学習コース: 学びやすい順に並べたステップ
+// 学習コース: 「世界一わかりやすい韓国語の教科書」のような、文字→基礎→語彙→文法→実践という
+// 教科書的な流れを参考にした5章構成(初級/中級/上級というレベル分けは廃止)
 // type "manual": ユーザーが自分で「完了にする」を押して完了とする
 // type "quiz": 単語帳のクイズに1回挑戦したら自動で完了とする
-// level: "beginner"(初級) | "intermediate"(中級) | "advanced"(上級)
+// level: STUDY_LEVELSのidのいずれか("hangul" | "basics" | "vocabulary" | "grammar" | "practice")
 const STUDY_LEVELS = [
-  { id: "beginner", label: "初級", desc: "ハングルの読み方と基本の単語・文型を覚える" },
-  { id: "intermediate", label: "中級", desc: "使える単語を増やし、文法のバリエーションを広げる" },
-  { id: "advanced", label: "上級", desc: "気持ちや理由を伝える表現を覚えて会話に近づける" },
+  { id: "hangul", label: "1章 ハングルを読めるようになる", desc: "母音・子音・パッチムを覚えて、韓国語の文字が読めるようになります" },
+  { id: "basics", label: "2章 基本の単語と文の骨組みを覚える", desc: "あいさつなどの単語と、語順・助詞・です/だの言い方を覚えます" },
+  { id: "vocabulary", label: "3章 使える単語を増やす", desc: "買い物・時間・道案内など、日常でよく使う単語を増やします" },
+  { id: "grammar", label: "4章 文法のバリエーションを広げる", desc: "ある/いる、過去形・否定・疑問など、文のパターンを増やします" },
+  { id: "practice", label: "5章 場面で使ってみる", desc: "覚えた単語と文法を使って、実際の会話に挑戦します" },
 ];
 
 const STUDY_STEPS = [
-  // ---- 初級 ----
+  // ---- 1章: ハングルを読めるようになる ----
   {
     id: "vowels",
     title: "母音の読み方を覚える",
     desc: "「ハングル」タブの母音一覧をタップして、発音を聞きながら読み方を覚えましょう。",
     tab: "hangul",
     type: "manual",
-    level: "beginner",
+    level: "hangul",
   },
   {
     id: "consonants",
@@ -373,7 +461,7 @@ const STUDY_STEPS = [
     desc: "「ハングル」タブの子音一覧をタップして、発音を確認しましょう。",
     tab: "hangul",
     type: "manual",
-    level: "beginner",
+    level: "hangul",
   },
   {
     id: "ganada",
@@ -381,8 +469,18 @@ const STUDY_STEPS = [
     desc: "子音+母音を組み合わせた文字(가,나,다…)をタップして声に出して読んでみましょう。",
     tab: "hangul",
     type: "manual",
-    level: "beginner",
+    level: "hangul",
   },
+  {
+    id: "batchim",
+    title: "パッチム(終声)の読み方を覚える",
+    desc: "「ハングル」タブでパッチムの仕組みと、代表的な7つの発音を確認しましょう。",
+    tab: "hangul",
+    type: "manual",
+    level: "hangul",
+  },
+
+  // ---- 2章: 基本の単語と文の骨組みを覚える ----
   {
     id: "greeting",
     title: "あいさつの単語を覚える",
@@ -390,7 +488,7 @@ const STUDY_STEPS = [
     tab: "words",
     categoryId: "greeting",
     type: "quiz",
-    level: "beginner",
+    level: "basics",
   },
   {
     id: "number",
@@ -399,7 +497,7 @@ const STUDY_STEPS = [
     tab: "words",
     categoryId: "number",
     type: "quiz",
-    level: "beginner",
+    level: "basics",
   },
   {
     id: "family",
@@ -408,7 +506,7 @@ const STUDY_STEPS = [
     tab: "words",
     categoryId: "family",
     type: "quiz",
-    level: "beginner",
+    level: "basics",
   },
   {
     id: "food",
@@ -417,7 +515,7 @@ const STUDY_STEPS = [
     tab: "words",
     categoryId: "food",
     type: "quiz",
-    level: "beginner",
+    level: "basics",
   },
   {
     id: "daily",
@@ -426,7 +524,7 @@ const STUDY_STEPS = [
     tab: "words",
     categoryId: "daily",
     type: "quiz",
-    level: "beginner",
+    level: "basics",
   },
   {
     id: "grammar-word-order",
@@ -434,7 +532,7 @@ const STUDY_STEPS = [
     desc: "「文法」タブで、韓国語と日本語の語順が同じであることを確認しましょう。",
     tab: "grammar",
     type: "manual",
-    level: "beginner",
+    level: "basics",
   },
   {
     id: "grammar-particles",
@@ -442,7 +540,7 @@ const STUDY_STEPS = [
     desc: "「文法」タブで、日本語の助詞に対応する韓国語の助詞を確認しましょう。",
     tab: "grammar",
     type: "manual",
-    level: "beginner",
+    level: "basics",
   },
   {
     id: "grammar-copula",
@@ -450,10 +548,10 @@ const STUDY_STEPS = [
     desc: "「文法」タブで、名詞に「이에요/예요」をつける言い方を確認しましょう。",
     tab: "grammar",
     type: "manual",
-    level: "beginner",
+    level: "basics",
   },
 
-  // ---- 中級 ----
+  // ---- 3章: 使える単語を増やす ----
   {
     id: "shopping",
     title: "買い物の単語を覚える",
@@ -461,7 +559,25 @@ const STUDY_STEPS = [
     tab: "words",
     categoryId: "shopping",
     type: "quiz",
-    level: "intermediate",
+    level: "vocabulary",
+  },
+  {
+    id: "restaurant",
+    title: "食事・注文の単語を覚える",
+    desc: "フラッシュカードで覚えたら、クイズに挑戦しましょう。",
+    tab: "words",
+    categoryId: "restaurant",
+    type: "quiz",
+    level: "vocabulary",
+  },
+  {
+    id: "direction",
+    title: "道案内の単語を覚える",
+    desc: "フラッシュカードで覚えたら、クイズに挑戦しましょう。",
+    tab: "words",
+    categoryId: "direction",
+    type: "quiz",
+    level: "vocabulary",
   },
   {
     id: "time",
@@ -470,7 +586,7 @@ const STUDY_STEPS = [
     tab: "words",
     categoryId: "time",
     type: "quiz",
-    level: "intermediate",
+    level: "vocabulary",
   },
   {
     id: "color",
@@ -479,7 +595,7 @@ const STUDY_STEPS = [
     tab: "words",
     categoryId: "color",
     type: "quiz",
-    level: "intermediate",
+    level: "vocabulary",
   },
   {
     id: "transport",
@@ -488,7 +604,7 @@ const STUDY_STEPS = [
     tab: "words",
     categoryId: "transport",
     type: "quiz",
-    level: "intermediate",
+    level: "vocabulary",
   },
   {
     id: "emotion",
@@ -497,15 +613,17 @@ const STUDY_STEPS = [
     tab: "words",
     categoryId: "emotion",
     type: "quiz",
-    level: "intermediate",
+    level: "vocabulary",
   },
+
+  // ---- 4章: 文法のバリエーションを広げる ----
   {
     id: "grammar-existence",
     title: "文法: 「ある/いる・ない/いない」",
     desc: "「文法」タブで、있어요/없어요の使い方を確認しましょう。",
     tab: "grammar",
     type: "manual",
-    level: "intermediate",
+    level: "grammar",
   },
   {
     id: "grammar-verb-basic",
@@ -513,7 +631,7 @@ const STUDY_STEPS = [
     desc: "「文法」タブで、해요体(丁寧な言い方)の作り方を確認しましょう。",
     tab: "grammar",
     type: "manual",
-    level: "intermediate",
+    level: "grammar",
   },
   {
     id: "grammar-past-neg-question",
@@ -521,17 +639,15 @@ const STUDY_STEPS = [
     desc: "「文法」タブで、過去形・否定文・疑問文の作り方を確認しましょう。",
     tab: "grammar",
     type: "manual",
-    level: "intermediate",
+    level: "grammar",
   },
-
-  // ---- 上級 ----
   {
     id: "grammar-want",
     title: "文法: 「〜したいです」",
     desc: "「文法」タブで、고 싶어요の使い方を確認しましょう。",
     tab: "grammar",
     type: "manual",
-    level: "advanced",
+    level: "grammar",
   },
   {
     id: "grammar-but",
@@ -539,7 +655,7 @@ const STUDY_STEPS = [
     desc: "「文法」タブで、지만の使い方を確認しましょう。",
     tab: "grammar",
     type: "manual",
-    level: "advanced",
+    level: "grammar",
   },
   {
     id: "grammar-because",
@@ -547,7 +663,7 @@ const STUDY_STEPS = [
     desc: "「文法」タブで、아서/어서の使い方を確認しましょう。",
     tab: "grammar",
     type: "manual",
-    level: "advanced",
+    level: "grammar",
   },
   {
     id: "grammar-can",
@@ -555,7 +671,44 @@ const STUDY_STEPS = [
     desc: "「文法」タブで、을 수 있어요/없어요の使い方を確認しましょう。",
     tab: "grammar",
     type: "manual",
-    level: "advanced",
+    level: "grammar",
+  },
+
+  // ---- 5章: 場面で使ってみる ----
+  {
+    id: "weather",
+    title: "天気の単語を覚える",
+    desc: "フラッシュカードで覚えたら、クイズに挑戦しましょう。",
+    tab: "words",
+    categoryId: "weather",
+    type: "quiz",
+    level: "practice",
+  },
+  {
+    id: "travel",
+    title: "旅行の単語を覚える",
+    desc: "フラッシュカードで覚えたら、クイズに挑戦しましょう。",
+    tab: "words",
+    categoryId: "travel",
+    type: "quiz",
+    level: "practice",
+  },
+  {
+    id: "hobby",
+    title: "趣味の単語を覚える",
+    desc: "フラッシュカードで覚えたら、クイズに挑戦しましょう。",
+    tab: "words",
+    categoryId: "hobby",
+    type: "quiz",
+    level: "practice",
+  },
+  {
+    id: "situations",
+    title: "場面別の会話に挑戦する",
+    desc: "「フレーズ」タブの『場面別の会話』で、実際の会話の流れを声に出して練習しましょう。",
+    tab: "phrases",
+    type: "manual",
+    level: "practice",
   },
   {
     id: "phrases",
@@ -563,7 +716,7 @@ const STUDY_STEPS = [
     desc: "ここまで覚えた単語と文法を使って、自己紹介や質問の言い方を「フレーズ」タブで確認しましょう。",
     tab: "phrases",
     type: "manual",
-    level: "advanced",
+    level: "practice",
   },
 ];
 
@@ -598,6 +751,76 @@ const PHRASES = [
       { kr: "이게 뭐예요?", yomi: "イゲ ムォエヨ?", jp: "これは何ですか?" },
       { kr: "화장실이 어디예요?", yomi: "ファジャンシリ オディエヨ?", jp: "トイレはどこですか?" },
       { kr: "지금 몇 시예요?", yomi: "チグム ミョッ シエヨ?", jp: "今何時ですか?" },
+    ],
+  },
+];
+
+// 場面別の会話(ダイアログ): speakerが「나」なら自分の発言、それ以外は相手役
+const SITUATIONS = [
+  {
+    id: "greeting",
+    title: "初めて会った人と自己紹介する",
+    desc: "初対面の人と挨拶を交わし、自己紹介をする場面の会話です。",
+    lines: [
+      { speaker: "나", kr: "안녕하세요. 처음 뵙겠습니다.", yomi: "アンニョンハセヨ. チョウム プェプケッスムニダ", jp: "こんにちは。初めまして。" },
+      { speaker: "상대방", kr: "안녕하세요. 만나서 반가워요.", yomi: "アンニョンハセヨ. マンナソ パンガウォヨ", jp: "こんにちは。お会いできて嬉しいです。" },
+      { speaker: "나", kr: "저는 다나카예요. 이름이 뭐예요?", yomi: "チョヌン タナカエヨ. イルミ ムォエヨ?", jp: "私は田中です。お名前は何ですか?" },
+      { speaker: "상대방", kr: "저는 김민수예요.", yomi: "チョヌン キムミンスエヨ", jp: "私はキム・ミンスです。" },
+      { speaker: "나", kr: "저는 일본 사람이에요. 민수 씨는요?", yomi: "チョヌン イルボン サラミエヨ. ミンス シヌンヨ?", jp: "私は日本人です。ミンスさんは?" },
+      { speaker: "상대방", kr: "저는 한국 사람이에요. 잘 부탁드립니다.", yomi: "チョヌン ハングク サラミエヨ. チャル プタクドゥリムニダ", jp: "私は韓国人です。よろしくお願いします。" },
+    ],
+  },
+  {
+    id: "restaurant",
+    title: "食堂で注文する",
+    desc: "友達と食堂に入り、席について注文するまでの会話です。",
+    lines: [
+      { speaker: "店員", kr: "어서 오세요! 몇 분이세요?", yomi: "オソ オセヨ! ミョッ プニセヨ?", jp: "いらっしゃいませ!何名様ですか?" },
+      { speaker: "나", kr: "두 명이에요.", yomi: "トゥ ミョンイエヨ", jp: "2名です。" },
+      { speaker: "店員", kr: "여기 메뉴판이요. 주문 도와드릴까요?", yomi: "ヨギ メニュパニヨ. チュムン トワドゥリルカヨ?", jp: "こちらメニューです。ご注文をお伺いしましょうか?" },
+      { speaker: "나", kr: "김치찌개 하나 주세요.", yomi: "キムチッチゲ ハナ ジュセヨ", jp: "キムチチゲを1つください。" },
+      { speaker: "店員", kr: "네, 잠시만 기다려 주세요.", yomi: "ネ, チャムシマン キダリョ ジュセヨ", jp: "はい、少々お待ちください。" },
+      { speaker: "나", kr: "저기요, 물 좀 주세요.", yomi: "チョギヨ, ムル チョム ジュセヨ", jp: "すみません、お水をください。" },
+    ],
+  },
+  {
+    id: "direction",
+    title: "道を尋ねる",
+    desc: "通りすがりの人に道を尋ねる場面の会話です。",
+    lines: [
+      { speaker: "나", kr: "저기요, 지하철역이 어디예요?", yomi: "チョギヨ, チハチョリョギ オディエヨ?", jp: "すみません、地下鉄の駅はどこですか?" },
+      { speaker: "行人", kr: "이 길로 똑바로 가세요.", yomi: "イ キルロ ットッパロ カセヨ", jp: "この道をまっすぐ行ってください。" },
+      { speaker: "나", kr: "여기서 멀어요?", yomi: "ヨギソ モロヨ?", jp: "ここから遠いですか?" },
+      { speaker: "行人", kr: "아니요, 여기서 가까워요. 걸어서 5분이에요.", yomi: "アニヨ, ヨギソ カッカウォヨ. コロソ オブニエヨ", jp: "いいえ、ここから近いです。歩いて5分です。" },
+      { speaker: "나", kr: "감사합니다!", yomi: "カムサハムニダ!", jp: "ありがとうございます!" },
+      { speaker: "行人", kr: "네, 조심히 가세요.", yomi: "ネ, チョシミ カセヨ", jp: "はい、気をつけて行ってください。" },
+    ],
+  },
+  {
+    id: "shopping",
+    title: "服屋で買い物する",
+    desc: "服屋さんで店員に声をかけられ、値段を聞いて購入するまでの会話です。",
+    lines: [
+      { speaker: "店員", kr: "어서 오세요! 찾으시는 거 있으세요?", yomi: "オソ オセヨ! チャジュシヌン ゴ イッスセヨ?", jp: "いらっしゃいませ!お探しのものはありますか?" },
+      { speaker: "나", kr: "이 티셔츠 다른 색 있어요?", yomi: "イ ティショチュ タルン セク イッソヨ?", jp: "このTシャツ、他の色はありますか?" },
+      { speaker: "店員", kr: "네, 검은색이랑 흰색이 있어요.", yomi: "ネ, コムンセギラン フィンセギ イッソヨ", jp: "はい、黒色と白色があります。" },
+      { speaker: "나", kr: "이거 얼마예요?", yomi: "イゴ オルマエヨ?", jp: "これいくらですか?" },
+      { speaker: "店員", kr: "이만 오천 원이에요.", yomi: "イマン オチョン ウォニエヨ", jp: "25,000ウォンです。" },
+      { speaker: "나", kr: "카드 돼요?", yomi: "カドゥ トェヨ?", jp: "カードは使えますか?" },
+      { speaker: "店員", kr: "네, 돼요.", yomi: "ネ, トェヨ", jp: "はい、使えます。" },
+    ],
+  },
+  {
+    id: "airport",
+    title: "空港でチェックインする",
+    desc: "空港のカウンターでチェックインする場面の会話です。",
+    lines: [
+      { speaker: "職員", kr: "여권 좀 보여 주세요.", yomi: "ヨグォン チョム ポヨ ジュセヨ", jp: "パスポートを見せてください。" },
+      { speaker: "나", kr: "여기 있어요.", yomi: "ヨギ イッソヨ", jp: "こちらです。" },
+      { speaker: "職員", kr: "짐이 몇 개예요?", yomi: "チミ ミョッ ケエヨ?", jp: "お荷物はいくつですか?" },
+      { speaker: "나", kr: "가방 하나예요.", yomi: "カバン ハナエヨ", jp: "カバン1つです。" },
+      { speaker: "職員", kr: "창가 자리랑 통로 자리 중에 어디가 좋으세요?", yomi: "チャンガ チャリラン トンノ チャリ ジュンエ オディガ チョウセヨ?", jp: "窓側と通路側、どちらがよろしいですか?" },
+      { speaker: "나", kr: "창가 자리로 주세요.", yomi: "チャンガ チャリロ ジュセヨ", jp: "窓側でお願いします。" },
     ],
   },
 ];

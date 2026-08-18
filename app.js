@@ -341,6 +341,10 @@ function renderHome() {
 }
 
 function goToStep(step) {
+  if (step.tab === "phrases" && step.id === "situations") {
+    phrasesViewMode = "situation";
+    selectedSituation = null;
+  }
   switchTab(step.tab);
   if (step.tab === "words" && step.categoryId) {
     const cat = WORD_CATEGORIES.find((c) => c.id === step.categoryId);
@@ -419,6 +423,8 @@ function renderHangul() {
   viewEl.appendChild(el(`<div class="section-title">子音 (タップで発音)</div>`));
   viewEl.appendChild(buildHangulGrid(HANGUL_CONSONANTS));
 
+  viewEl.appendChild(buildBatchimSection());
+
   const drillBtn = el(`<button class="card-controls btn-speak" style="width:100%;border:none;border-radius:10px;padding:12px;margin-top:16px;">✍️ 母音・子音の書き取り練習をする</button>`);
   drillBtn.addEventListener("click", () => {
     hangulViewMode = "drill";
@@ -435,6 +441,17 @@ function composeHangul(consonantChar, vowelChar) {
   const jungIndex = JUNGSEONG_LIST.indexOf(vowelChar);
   if (choIndex === -1 || jungIndex === -1) return consonantChar + vowelChar;
   const code = 0xac00 + (choIndex * 21 + jungIndex) * 28;
+  return String.fromCharCode(code);
+}
+
+// パッチム(終声)付き文字の合成に使うUnicode順の終声一覧("" = パッチムなし)
+const JONGSEONG_LIST = ["", "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ", "ㄻ", "ㄼ", "ㄽ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+function composeHangulFull(consonantChar, vowelChar, batchimChar) {
+  const choIndex = CHOSEONG_LIST.indexOf(consonantChar);
+  const jungIndex = JUNGSEONG_LIST.indexOf(vowelChar);
+  const jongIndex = JONGSEONG_LIST.indexOf(batchimChar || "");
+  if (choIndex === -1 || jungIndex === -1 || jongIndex === -1) return consonantChar + vowelChar + (batchimChar || "");
+  const code = 0xac00 + (choIndex * 21 + jungIndex) * 28 + jongIndex;
   return String.fromCharCode(code);
 }
 
@@ -632,6 +649,49 @@ function buildHangulGrid(list) {
     grid.appendChild(tile);
   });
   return grid;
+}
+
+// ==== パッチム(終声)セクション ====
+
+function buildBatchimSection() {
+  const wrap = el(`<div></div>`);
+  wrap.appendChild(el(`<div class="section-title">パッチム(終声)を覚える</div>`));
+  wrap.appendChild(el(`
+    <div class="grammar-explanation">
+      韓国語の文字には、①子音+母音の2つで1文字になるもの(가, 나, 다…)と、②子音+母音+もう1つの子音で1文字になるものがあります。この最後につく子音を「パッチム(받침)」と呼びます。表記は様々でも、発音される音は代表的な7種類に集約されるので、まずはこの7つだけ覚えれば十分です。
+    </div>
+  `));
+
+  const grid = el(`<div class="batchim-grid"></div>`);
+  BATCHIM_EXAMPLES.forEach((b) => {
+    const tile = el(`
+      <div class="batchim-tile">
+        <div class="batchim-jong">${b.jong} <span>[${b.romaja}]${b.group ? " " + b.group : ""}</span></div>
+        <div class="batchim-example">${b.example}</div>
+        <div class="batchim-example-yomi">${b.exampleYomi}(${b.exampleJp})</div>
+      </div>
+    `);
+    tile.addEventListener("click", () => speak(b.example));
+    grid.appendChild(tile);
+  });
+  wrap.appendChild(grid);
+
+  wrap.appendChild(el(`<div class="section-title">同じ文字でもパッチムが変わると音が変わる</div>`));
+  const demoRow = el(`<div class="batchim-demo-row"></div>`);
+  ["", "ㄱ", "ㄴ", "ㄹ", "ㅁ", "ㅂ", "ㅇ"].forEach((jong) => {
+    const syllable = composeHangulFull("ㄱ", "ㅏ", jong);
+    const tile = el(`
+      <div class="batchim-demo-tile">
+        <div class="ch">${syllable}</div>
+        <div class="label">${jong ? "+" + jong : "パッチムなし"}</div>
+      </div>
+    `);
+    tile.addEventListener("click", () => speak(syllable));
+    demoRow.appendChild(tile);
+  });
+  wrap.appendChild(demoRow);
+
+  return wrap;
 }
 
 // ==== 単語帳画面 ====
@@ -968,8 +1028,33 @@ function renderGrammar() {
 
 // ==== フレーズ画面 ====
 
+let phrasesViewMode = "basic"; // "basic" | "situation"
+let selectedSituation = null;
+
 function renderPhrases() {
   viewEl.innerHTML = "";
+
+  const switchBar = el(`
+    <div class="mode-switch">
+      <button data-mode="basic" class="${phrasesViewMode === "basic" ? "active" : ""}">基本フレーズ</button>
+      <button data-mode="situation" class="${phrasesViewMode === "situation" ? "active" : ""}">🎭 場面別の会話</button>
+    </div>
+  `);
+  switchBar.querySelectorAll("button").forEach((b) => {
+    b.addEventListener("click", () => {
+      phrasesViewMode = b.dataset.mode;
+      selectedSituation = null;
+      renderPhrases();
+    });
+  });
+  viewEl.appendChild(switchBar);
+
+  if (phrasesViewMode === "situation") {
+    if (selectedSituation) renderSituationDialogue(selectedSituation);
+    else renderSituationList();
+    return;
+  }
+
   PHRASES.forEach((group) => {
     viewEl.appendChild(el(`<div class="section-title">${group.title}</div>`));
     group.items.forEach((item) => {
@@ -984,6 +1069,55 @@ function renderPhrases() {
       viewEl.appendChild(card);
     });
   });
+}
+
+function renderSituationList() {
+  viewEl.appendChild(el(`<div class="section-title">場面を選んでください</div>`));
+  SITUATIONS.forEach((sit) => {
+    const card = el(`
+      <div class="category-card">
+        <div>
+          <div class="cat-name">${sit.title}</div>
+          <div class="cat-progress">${sit.desc}</div>
+        </div>
+        <div>›</div>
+      </div>
+    `);
+    card.addEventListener("click", () => {
+      selectedSituation = sit;
+      renderPhrases();
+    });
+    viewEl.appendChild(card);
+  });
+}
+
+function renderSituationDialogue(sit) {
+  const back = el(`<button class="back-btn">‹ 場面一覧に戻る</button>`);
+  back.addEventListener("click", () => {
+    selectedSituation = null;
+    renderPhrases();
+  });
+  viewEl.appendChild(back);
+  viewEl.appendChild(el(`<div class="section-title">${sit.title}</div>`));
+  viewEl.appendChild(el(`<div class="grammar-explanation">${sit.desc}</div>`));
+
+  const dialogueWrap = el(`<div class="dialogue-wrap"></div>`);
+  sit.lines.forEach((line) => {
+    const isMe = line.speaker === "나";
+    const bubble = el(`
+      <div class="dialogue-line ${isMe ? "me" : "other"}">
+        <div class="dialogue-speaker">${line.speaker}</div>
+        <div class="dialogue-bubble">
+          <div class="kr">${line.kr}<span class="speak-icon">🔊</span></div>
+          <div class="yomi-text">${line.yomi}</div>
+          <div class="jp">${line.jp}</div>
+        </div>
+      </div>
+    `);
+    bubble.querySelector(".speak-icon").addEventListener("click", () => speak(line.kr));
+    dialogueWrap.appendChild(bubble);
+  });
+  viewEl.appendChild(dialogueWrap);
 }
 
 // ==== 初期表示 ====

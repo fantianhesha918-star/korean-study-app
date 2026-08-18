@@ -456,3 +456,73 @@ html, body {
   text-align: center;
   padding: 20px;
 }
+
+.batchim-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.batchim-tile {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.batchim-jong { font-weight: 700; color: var(--accent); font-size: 0.95rem; }
+.batchim-jong span { color: var(--text-sub); font-weight: 400; font-size: 0.75rem; }
+.batchim-example { font-size: 1.3rem; font-weight: 700; margin-top: 4px; }
+.batchim-example-yomi { font-size: 0.78rem; color: var(--text-sub); margin-top: 2px; }
+
+.batchim-demo-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.batchim-demo-tile {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 6px;
+  text-align: center;
+  min-width: 64px;
+  flex: 1;
+  cursor: pointer;
+}
+.batchim-demo-tile .ch { font-size: 1.3rem; font-weight: 700; }
+.batchim-demo-tile .label { font-size: 0.68rem; color: var(--text-sub); margin-top: 2px; }
+
+.dialogue-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+.dialogue-line {
+  display: flex;
+  flex-direction: column;
+  max-width: 85%;
+}
+.dialogue-line.me { align-self: flex-end; align-items: flex-end; }
+.dialogue-line.other { align-self: flex-start; align-items: flex-start; }
+.dialogue-speaker {
+  font-size: 0.72rem;
+  color: var(--text-sub);
+  margin-bottom: 4px;
+  padding: 0 4px;
+}
+.dialogue-bubble {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+.dialogue-line.me .dialogue-bubble {
+  background: var(--accent-light);
+  border-color: var(--accent-light);
+}
+.dialogue-bubble .kr { font-weight: 700; font-size: 1.02rem; }
+.dialogue-bubble .yomi-text { color: var(--accent); font-size: 0.82rem; margin-top: 2px; }
+.dialogue-bubble .jp { color: var(--text-sub); font-size: 0.85rem; margin-top: 4px; }
