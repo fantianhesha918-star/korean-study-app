@@ -150,6 +150,22 @@ html, body {
 .ganada-table td { cursor: pointer; }
 .ganada-table td:active { background: var(--accent-light); }
 
+.purpose-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+.purpose-icon { font-size: 2rem; flex-shrink: 0; }
+.purpose-body { flex: 1; }
+.purpose-title { font-weight: 800; font-size: 1.05rem; }
+.purpose-desc { font-size: 0.82rem; color: var(--text-sub); margin-top: 2px; }
+
 .category-card {
   background: var(--card-bg);
   border: 1px solid var(--border);
@@ -163,6 +179,31 @@ html, body {
 }
 .category-card .cat-name { font-weight: 700; }
 .category-card .cat-progress { font-size: 0.8rem; color: var(--text-sub); }
+
+.word-list {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.word-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.word-list-item:last-child { border-bottom: none; }
+.word-list-main .kr { font-weight: 700; font-size: 1rem; }
+.word-list-main .yomi-text { color: var(--accent); font-size: 0.8rem; margin-top: 2px; }
+.word-list-jp {
+  color: var(--text-sub);
+  font-size: 0.85rem;
+  text-align: right;
+  flex-shrink: 0;
+  max-width: 40%;
+}
 
 .back-btn {
   background: none;

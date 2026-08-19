@@ -708,16 +708,169 @@ function buildBatchimSection() {
 
 // ==== 単語帳画面 ====
 
+// 単語帳タブは、まず「調べる(一覧)」か「問題(練習)」かを選ばせる。
+// 単語を調べたいだけのときにクイズ等が挟まって鬱陶しくならないよう、参照用途と練習用途を明確に分離する。
+// 練習の中はさらに「カテゴリ→モード」ではなく「目的→カテゴリ」の順にして、
+// 1画面に複数のモード(カード/クイズ/聞く/書く)が並んで迷う状態を避ける。
+const WORD_PURPOSES = {
+  read: { label: "読む", icon: "📖", desc: "フラッシュカードとクイズで、意味を覚えます", modes: ["flashcard", "quiz"] },
+  listen: { label: "聞く・発音", icon: "🎧", desc: "音声を聞き取り、声に出して真似します", modes: ["listening"] },
+  write: { label: "書く", icon: "✍️", desc: "韓国語をタイピングして書く練習をします", modes: ["dictation"] },
+};
+const MODE_LABELS = { flashcard: "カード", quiz: "クイズ", listening: "🎧 聞く", dictation: "✍️ 書く" };
+function purposeKeyForMode(mode) {
+  return Object.keys(WORD_PURPOSES).find((k) => WORD_PURPOSES[k].modes.includes(mode)) || "read";
+}
+
+let wordsSection = null; // null | "browse" | "practice"
+let wordsPurpose = null; // null | "read" | "listen" | "write" ("practice"時のみ使用)
+let browseCategoryId = null; // "browse"時のみ使用
+
 function renderWordsHome() {
   viewEl.innerHTML = "";
-  viewEl.appendChild(el(`<div class="section-title">カテゴリを選んでください</div>`));
+  if (!wordsSection) {
+    renderWordsSectionSelect();
+  } else if (wordsSection === "browse") {
+    const cat = WORD_CATEGORIES.find((c) => c.id === browseCategoryId);
+    if (cat) renderWordListView(cat);
+    else renderWordsBrowseCategoryList();
+  } else if (!wordsPurpose) {
+    renderWordsPurposeSelect();
+  } else {
+    renderWordsCategoryList(wordsPurpose);
+  }
+}
+
+function renderWordsSectionSelect() {
+  viewEl.appendChild(el(`<div class="section-title">単語帳でしたいことを選んでください</div>`));
+  const sections = [
+    { key: "browse", icon: "📋", label: "単語帳を見る", desc: "全部の単語を一覧でさっと確認できます(タップで発音のみ)" },
+    { key: "practice", icon: "✏️", label: "問題に挑戦する", desc: "クイズ・聞き取り・書き取りで練習します" },
+  ];
+  sections.forEach((s) => {
+    const card = el(`
+      <div class="purpose-card">
+        <div class="purpose-icon">${s.icon}</div>
+        <div class="purpose-body">
+          <div class="purpose-title">${s.label}</div>
+          <div class="purpose-desc">${s.desc}</div>
+        </div>
+        <div>›</div>
+      </div>
+    `);
+    card.addEventListener("click", () => {
+      wordsSection = s.key;
+      renderWordsHome();
+    });
+    viewEl.appendChild(card);
+  });
+}
+
+function renderWordsBrowseCategoryList() {
+  const back = el(`<button class="back-btn">‹ 単語帳トップに戻る</button>`);
+  back.addEventListener("click", () => {
+    wordsSection = null;
+    renderWordsHome();
+  });
+  viewEl.appendChild(back);
+  viewEl.appendChild(el(`<div class="section-title">📋 単語帳: カテゴリを選んでください</div>`));
+  WORD_CATEGORIES.forEach((cat) => {
+    const card = el(`
+      <div class="category-card">
+        <div>
+          <div class="cat-name">${cat.name}</div>
+          <div class="cat-progress">${cat.words.length}語</div>
+        </div>
+        <div>›</div>
+      </div>
+    `);
+    card.addEventListener("click", () => {
+      browseCategoryId = cat.id;
+      renderWordsHome();
+    });
+    viewEl.appendChild(card);
+  });
+}
+
+function renderWordListView(cat) {
+  const back = el(`<button class="back-btn">‹ 単語帳のカテゴリ一覧に戻る</button>`);
+  back.addEventListener("click", () => {
+    browseCategoryId = null;
+    renderWordsHome();
+  });
+  viewEl.appendChild(back);
+  viewEl.appendChild(el(`<div class="section-title">${cat.name}</div>`));
+  if (cat.tip) viewEl.appendChild(buildTipBox(cat.tip));
+
+  const list = el(`<div class="word-list"></div>`);
+  cat.words.forEach((w) => {
+    const item = el(`
+      <div class="word-list-item">
+        <div class="word-list-main">
+          <div class="kr">${w.kr}<span class="speak-icon">🔊</span></div>
+          <div class="yomi-text">${w.yomi}</div>
+        </div>
+        <div class="word-list-jp">${w.jp}</div>
+      </div>
+    `);
+    item.querySelector(".speak-icon").addEventListener("click", () => speak(w.kr));
+    list.appendChild(item);
+  });
+  viewEl.appendChild(list);
+}
+
+function renderWordsPurposeSelect() {
+  const back = el(`<button class="back-btn">‹ 単語帳トップに戻る</button>`);
+  back.addEventListener("click", () => {
+    wordsSection = null;
+    renderWordsHome();
+  });
+  viewEl.appendChild(back);
+  viewEl.appendChild(el(`<div class="section-title">今日は何を練習しますか?</div>`));
+  viewEl.appendChild(buildTipBox("目的を選ぶと、その練習だけに集中できます。あとから別の目的にいつでも切り替えられます。"));
+  Object.keys(WORD_PURPOSES).forEach((key) => {
+    const p = WORD_PURPOSES[key];
+    const card = el(`
+      <div class="purpose-card">
+        <div class="purpose-icon">${p.icon}</div>
+        <div class="purpose-body">
+          <div class="purpose-title">${p.label}</div>
+          <div class="purpose-desc">${p.desc}</div>
+        </div>
+        <div>›</div>
+      </div>
+    `);
+    card.addEventListener("click", () => {
+      wordsPurpose = key;
+      renderWordsHome();
+    });
+    viewEl.appendChild(card);
+  });
+}
+
+function renderWordsCategoryList(purposeKey) {
+  const purpose = WORD_PURPOSES[purposeKey];
+  const back = el(`<button class="back-btn">‹ 目的選択に戻る</button>`);
+  back.addEventListener("click", () => {
+    wordsPurpose = null;
+    renderWordsHome();
+  });
+  viewEl.appendChild(back);
+  viewEl.appendChild(el(`<div class="section-title">${purpose.icon} ${purpose.label}: カテゴリを選んでください</div>`));
+
   const progress = loadProgress();
   const dictationProgress = loadDictationProgress();
   WORD_CATEGORIES.forEach((cat) => {
-    const p = progress[cat.id];
-    const d = dictationProgress[cat.id];
-    let progressText = p ? `クイズ ベスト ${p.bestScore}/${cat.words.length}` : "クイズ未挑戦";
-    progressText += d ? ` ・ 書き取り ベスト ${d.bestScore}/${cat.words.length}` : " ・ 書き取り未挑戦";
+    let progressText;
+    if (purposeKey === "read") {
+      const p = progress[cat.id];
+      progressText = p ? `ベスト ${p.bestScore}/${cat.words.length}` : "未挑戦";
+    } else if (purposeKey === "write") {
+      const d = dictationProgress[cat.id];
+      progressText = d ? `ベスト ${d.bestScore}/${cat.words.length}` : "未挑戦";
+    } else {
+      progressText = `${cat.words.length}問`;
+    }
     const card = el(`
       <div class="category-card">
         <div>
@@ -727,31 +880,33 @@ function renderWordsHome() {
         <div>›</div>
       </div>
     `);
-    card.addEventListener("click", () => renderCategoryDetail(cat));
+    card.addEventListener("click", () => renderCategoryDetail(cat, purpose.modes[0]));
     viewEl.appendChild(card);
   });
 }
 
 function renderCategoryDetail(cat, mode = "flashcard") {
   viewEl.innerHTML = "";
-  const back = el(`<button class="back-btn">‹ カテゴリ一覧に戻る</button>`);
-  back.addEventListener("click", renderWordsHome);
+  const purposeKey = purposeKeyForMode(mode);
+  wordsSection = "practice"; // 直接リンクされた場合も「戻る」の行き先を練習側に揃える
+  wordsPurpose = purposeKey;
+  const purpose = WORD_PURPOSES[purposeKey];
+
+  const back = el(`<button class="back-btn">‹ ${purpose.icon} ${purpose.label}のカテゴリ一覧に戻る</button>`);
+  back.addEventListener("click", () => renderWordsCategoryList(purposeKey));
   viewEl.appendChild(back);
 
   viewEl.appendChild(el(`<div class="section-title">${cat.name}</div>`));
 
-  const switchBar = el(`
-    <div class="mode-switch">
-      <button data-mode="flashcard" class="${mode === "flashcard" ? "active" : ""}">カード</button>
-      <button data-mode="quiz" class="${mode === "quiz" ? "active" : ""}">クイズ</button>
-      <button data-mode="listening" class="${mode === "listening" ? "active" : ""}">🎧 聞く</button>
-      <button data-mode="dictation" class="${mode === "dictation" ? "active" : ""}">✍️ 書く</button>
-    </div>
-  `);
-  switchBar.querySelectorAll("button").forEach((b) => {
-    b.addEventListener("click", () => renderCategoryDetail(cat, b.dataset.mode));
-  });
-  viewEl.appendChild(switchBar);
+  if (purpose.modes.length > 1) {
+    const switchBar = el(`<div class="mode-switch"></div>`);
+    purpose.modes.forEach((m) => {
+      const btn = el(`<button data-mode="${m}" class="${mode === m ? "active" : ""}">${MODE_LABELS[m]}</button>`);
+      btn.addEventListener("click", () => renderCategoryDetail(cat, m));
+      switchBar.appendChild(btn);
+    });
+    viewEl.appendChild(switchBar);
+  }
 
   if (cat.tip) viewEl.appendChild(buildTipBox(cat.tip));
 
