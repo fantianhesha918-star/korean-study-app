@@ -203,6 +203,16 @@ function el(html) {
   return div.firstElementChild;
 }
 
+// ワンポイントアドバイスの表示部品(単語帳・文法・場面別会話で共通利用)
+function buildTipBox(text) {
+  return el(`
+    <div class="tip-box">
+      <div class="tip-icon">💡</div>
+      <div class="tip-body"><strong>ワンポイント</strong>${text}</div>
+    </div>
+  `);
+}
+
 function shuffle(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -279,7 +289,7 @@ function renderHome() {
 
     viewEl.appendChild(el(`
       <div class="level-header ${levelDone ? "done" : ""}">
-        <div class="level-title">${level.label}${levelDone ? " ✓ 完了" : ""}</div>
+        <div class="level-title">${level.icon || ""} ${level.label}${levelDone ? " ✓ 完了" : ""}</div>
         <div class="level-desc">${level.desc}</div>
         <div class="level-count">${levelCompletedCount} / ${stepsInLevel.length} 完了</div>
       </div>
@@ -420,8 +430,10 @@ function renderHangul() {
   viewEl.appendChild(buildGanadaTable());
   viewEl.appendChild(el(`<div class="section-title">母音 (タップで発音)</div>`));
   viewEl.appendChild(buildHangulGrid(HANGUL_VOWELS));
+  viewEl.appendChild(buildTipBox("ㅏとㅗは文法でよくペアになる母音です。あとで習う「해요体」では、語幹の最後の母音がㅏかㅗなら「아요」、それ以外なら「어요」を使う、というルールが出てきます(文法4章で詳しく)。今のうちに「ㅏ・ㅗは仲間」と意識しておくと、後の文法がスッと理解できます。"));
   viewEl.appendChild(el(`<div class="section-title">子音 (タップで発音)</div>`));
   viewEl.appendChild(buildHangulGrid(HANGUL_CONSONANTS));
+  viewEl.appendChild(buildTipBox("子音はㄱ・ㅋ・ㄲ、ㄷ・ㅌ・ㄸ、ㅂ・ㅍ・ㅃ、ㅅ・ㅆ、ㅈ・ㅊ・ㅉのように、形も音も似た仲間(平音・激音・濃音)になっています。息を強く吐く激音(ㅋㅌㅍㅊ)、喉を締めて発音する濃音(ㄲㄸㅃㅆㅉ)と覚えると、形の違いも音の違いも一緒に整理できます。"));
 
   viewEl.appendChild(buildBatchimSection());
 
@@ -741,6 +753,8 @@ function renderCategoryDetail(cat, mode = "flashcard") {
   });
   viewEl.appendChild(switchBar);
 
+  if (cat.tip) viewEl.appendChild(buildTipBox(cat.tip));
+
   if (mode === "flashcard") {
     viewEl.appendChild(buildFlashcards(cat));
   } else if (mode === "quiz") {
@@ -1011,6 +1025,7 @@ function renderGrammar() {
   GRAMMAR_LESSONS.forEach((lesson) => {
     viewEl.appendChild(el(`<div class="section-title">${lesson.title}</div>`));
     viewEl.appendChild(el(`<div class="grammar-explanation">${lesson.explanation}</div>`));
+    if (lesson.tip) viewEl.appendChild(buildTipBox(lesson.tip));
     lesson.points.forEach((point) => {
       const card = el(`
         <div class="phrase-card">
@@ -1100,6 +1115,7 @@ function renderSituationDialogue(sit) {
   viewEl.appendChild(back);
   viewEl.appendChild(el(`<div class="section-title">${sit.title}</div>`));
   viewEl.appendChild(el(`<div class="grammar-explanation">${sit.desc}</div>`));
+  if (sit.tip) viewEl.appendChild(buildTipBox(sit.tip));
 
   const dialogueWrap = el(`<div class="dialogue-wrap"></div>`);
   sit.lines.forEach((line) => {
