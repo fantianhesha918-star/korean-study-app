@@ -21,6 +21,7 @@ if ("speechSynthesis" in window) {
 }
 
 const STORAGE_KEY = "kr_study_progress_v1";
+const WORDS_NAV_STORAGE_KEY = "kr_words_nav_v1"; // ALL_STORAGE_KEYSより前に必要なため先頭で宣言
 function loadProgress() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
@@ -61,62 +62,102 @@ function recordDictationResult(categoryId, correctCount, totalCount) {
   localStorage.setItem(DICTATION_STORAGE_KEY, JSON.stringify(progress));
 }
 
-// ==== 苦手な単語(間違えた単語)の記録 ====
-const MISTAKE_STORAGE_KEY = "kr_mistakes_v1";
-function loadMistakes() {
+// ==== 間隔反復(SRS)による復習キュー ====
+// 正解するたびにbox(1〜5)を上げて復習の間隔をあけ、間違えたらbox1(翌日)に戻す、簡易Leitner方式
+const SRS_STORAGE_KEY = "kr_srs_v1";
+const SRS_INTERVAL_DAYS = { 1: 1, 2: 3, 3: 7, 4: 14, 5: 30 };
+function loadSrs() {
   try {
-    return JSON.parse(localStorage.getItem(MISTAKE_STORAGE_KEY)) || {};
+    return JSON.parse(localStorage.getItem(SRS_STORAGE_KEY)) || {};
   } catch (e) {
     return {};
   }
 }
-function saveMistakes(mistakes) {
-  localStorage.setItem(MISTAKE_STORAGE_KEY, JSON.stringify(mistakes));
+function saveSrs(data) {
+  localStorage.setItem(SRS_STORAGE_KEY, JSON.stringify(data));
 }
+function addDaysToDateStr(dateStr, days) {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return formatDateLocal(d);
+}
+function updateSrs(categoryId, kr, isCorrect) {
+  const data = loadSrs();
+  if (!data[categoryId]) data[categoryId] = {};
+  const today = formatDateLocal(new Date());
+  const prevBox = (data[categoryId][kr] && data[categoryId][kr].box) || 0;
+  const box = isCorrect ? Math.min(prevBox + 1, 5) : 1;
+  data[categoryId][kr] = { box, due: addDaysToDateStr(today, SRS_INTERVAL_DAYS[box]) };
+  saveSrs(data);
+}
+// 既存の呼び出し箇所(クイズ・書き取り・聞き取り)を変えずに済むよう、同じ関数名でSRSに橋渡しする
 function recordMistake(categoryId, kr) {
-  const mistakes = loadMistakes();
-  if (!mistakes[categoryId]) mistakes[categoryId] = [];
-  if (!mistakes[categoryId].includes(kr)) {
-    mistakes[categoryId].push(kr);
-    saveMistakes(mistakes);
-  }
+  updateSrs(categoryId, kr, false);
 }
 function clearMistake(categoryId, kr) {
-  const mistakes = loadMistakes();
-  if (mistakes[categoryId] && mistakes[categoryId].includes(kr)) {
-    mistakes[categoryId] = mistakes[categoryId].filter((k) => k !== kr);
-    saveMistakes(mistakes);
-  }
+  updateSrs(categoryId, kr, true);
 }
-function getAllMistakeWords() {
-  const mistakes = loadMistakes();
+function getDueReviewWords() {
+  const data = loadSrs();
+  const today = formatDateLocal(new Date());
   const result = [];
   WORD_CATEGORIES.forEach((cat) => {
-    const krList = mistakes[cat.id] || [];
+    const catData = data[cat.id] || {};
     cat.words.forEach((w) => {
-      if (krList.includes(w.kr)) result.push({ ...w, catId: cat.id });
+      const entry = catData[w.kr];
+      if (entry && entry.due <= today) result.push({ ...w, catId: cat.id });
     });
   });
   return result;
 }
 
-const STEP_STORAGE_KEY = "kr_step_progress_v1";
-function loadStepProgress() {
-  try {
-    return JSON.parse(localStorage.getItem(STEP_STORAGE_KEY)) || {};
-  } catch (e) {
-    return {};
-  }
+// 文法・場面別会話も、単語と同じSRSの仕組みに乗せる。
+// 1レッスン/1場面につき1件として、"grammar"/"situation"を疑似カテゴリID、lesson.id/sit.idをkr代わりのキーに使う。
+// 自動採点できないため、本人が「覚えた/もう一度」を自己申告する形で正解・不正解を記録する。
+function isReviewDue(namespace, id) {
+  const data = loadSrs();
+  const entry = data[namespace] && data[namespace][id];
+  if (!entry) return false; // 一度も自己評価していないものは「復習」ではなく「未評価」として扱う
+  return entry.due <= formatDateLocal(new Date());
 }
-function setStepComplete(stepId, done) {
-  const stepProgress = loadStepProgress();
-  if (done) stepProgress[stepId] = true;
-  else delete stepProgress[stepId];
-  localStorage.setItem(STEP_STORAGE_KEY, JSON.stringify(stepProgress));
+function isGrammarDue(lessonId) {
+  return isReviewDue("grammar", lessonId);
 }
-function isStepComplete(step) {
-  if (step.type === "quiz") return !!loadProgress()[step.categoryId];
-  return !!loadStepProgress()[step.id];
+function isSituationDue(sitId) {
+  return isReviewDue("situation", sitId);
+}
+function getDueGrammarLessons() {
+  return GRAMMAR_LESSONS.filter((l) => isGrammarDue(l.id));
+}
+function getDueSituations() {
+  return SITUATIONS.filter((s) => isSituationDue(s.id));
+}
+function buildSelfRateRow(namespace, id) {
+  const entry = loadSrs()[namespace] && loadSrs()[namespace][id];
+  const label = entry ? "この内容、覚えていますか?" : "読み終わったら記録しましょう";
+  const row = el(`
+    <div class="self-rate-row">
+      <div class="self-rate-label">${label}</div>
+      <button class="self-rate-btn again">🔁 もう一度</button>
+      <button class="self-rate-btn good">✓ 覚えた</button>
+    </div>
+  `);
+  row.querySelector(".again").addEventListener("click", () => {
+    updateSrs(namespace, id, false);
+    render();
+  });
+  row.querySelector(".good").addEventListener("click", () => {
+    updateSrs(namespace, id, true);
+    render();
+  });
+  return row;
+}
+
+const CATEGORY_MASTERY_RATE = 0.7; // クイズのベストスコアがこの割合以上で「マスター」とみなす
+function isCategoryMastered(cat) {
+  const p = loadProgress()[cat.id];
+  if (!p) return false;
+  return cat.words.length > 0 && p.bestScore / cat.words.length >= CATEGORY_MASTERY_RATE;
 }
 
 // ==== 継続記録(ストリーク) ====
@@ -142,19 +183,31 @@ function recordTodayActivity() {
     localStorage.setItem(STREAK_STORAGE_KEY, JSON.stringify(data));
   }
 }
+// 連続記録の途中で最大2日まで「抜け」を許容する(ストリークの保険/フリーズ)
+// 別ストレージで消費数を管理せず、dates配列から毎回そのまま計算できるようにしている
+const STREAK_FREEZE_ALLOWANCE = 2;
 function getCurrentStreak() {
   const dateSet = new Set(loadStreakData().dates);
   let streak = 0;
+  let freezesLeft = STREAK_FREEZE_ALLOWANCE;
   const cursor = new Date();
-  while (dateSet.has(formatDateLocal(cursor))) {
-    streak++;
+  while (true) {
+    const dateStr = formatDateLocal(cursor);
+    if (dateSet.has(dateStr)) {
+      streak++;
+    } else if (streak > 0 && freezesLeft > 0) {
+      streak++; // この日はフリーズで補い、連続記録も日数もそのまま伸ばす
+      freezesLeft--;
+    } else {
+      break;
+    }
     cursor.setDate(cursor.getDate() - 1);
   }
   return streak;
 }
 
 // このアプリが使うlocalStorageキー一覧(バックアップの書き出し/読み込みで使う)
-const ALL_STORAGE_KEYS = [STORAGE_KEY, DICTATION_STORAGE_KEY, STEP_STORAGE_KEY, STREAK_STORAGE_KEY, MISTAKE_STORAGE_KEY];
+const ALL_STORAGE_KEYS = [STORAGE_KEY, DICTATION_STORAGE_KEY, STREAK_STORAGE_KEY, SRS_STORAGE_KEY, WORDS_NAV_STORAGE_KEY];
 
 function downloadProgressBackup() {
   const data = {};
@@ -257,68 +310,80 @@ function renderHome() {
     viewEl.appendChild(el(`<div class="streak-badge">🔥 ${streak}日連続学習中！</div>`));
   }
 
-  const mistakeCount = getAllMistakeWords().length;
-  if (mistakeCount > 0) {
+  const dueWordCount = getDueReviewWords().length;
+  const dueGrammarCount = getDueGrammarLessons().length;
+  const dueSituationCount = getDueSituations().length;
+  const totalDue = dueWordCount + dueGrammarCount + dueSituationCount;
+  if (totalDue > 0) {
     const reviewCard = el(`
       <div class="step-card review-card">
-        <div class="step-badge">📝</div>
+        <div class="step-badge">🔁</div>
         <div class="step-body">
-          <div class="step-title">苦手な単語を復習する</div>
-          <div class="step-desc">クイズ・書き取りで間違えた単語が ${mistakeCount}個 たまっています。</div>
+          <div class="step-title">今日の復習</div>
+          <div class="step-desc">間隔をあけて復習するタイミングの単語・文法・会話が ${totalDue}個 あります。</div>
         </div>
       </div>
     `);
-    reviewCard.addEventListener("click", () => goToMistakeReview());
+    reviewCard.addEventListener("click", () => goToReviewQueue());
     viewEl.appendChild(reviewCard);
   }
 
-  const completedCount = STUDY_STEPS.filter((s) => isStepComplete(s)).length;
-  viewEl.appendChild(el(`<div class="section-title">学習コース (${completedCount} / ${STUDY_STEPS.length} 完了)</div>`));
+  const masteredCatCount = WORD_CATEGORIES.filter(isCategoryMastered).length;
+  viewEl.appendChild(el(`<div class="section-title">学習コース</div>`));
+  viewEl.appendChild(el(`
+    <div class="empty-note" style="text-align:left;padding:0;">
+      📚 単語マスター ${masteredCatCount} / ${WORD_CATEGORIES.length} カテゴリ(クイズで${Math.round(CATEGORY_MASTERY_RATE * 100)}%以上正解)
+    </div>
+  `));
   viewEl.appendChild(el(`
     <div class="progress-bar-track">
-      <div class="progress-bar-fill" style="width:${(completedCount / STUDY_STEPS.length) * 100}%"></div>
+      <div class="progress-bar-fill" style="width:${(masteredCatCount / WORD_CATEGORIES.length) * 100}%"></div>
     </div>
   `));
 
-  const nextStep = STUDY_STEPS.find((s) => !isStepComplete(s));
-
   STUDY_LEVELS.forEach((level) => {
-    const stepsInLevel = STUDY_STEPS.filter((s) => s.level === level.id);
-    const levelCompletedCount = stepsInLevel.filter((s) => isStepComplete(s)).length;
-    const levelDone = levelCompletedCount === stepsInLevel.length;
+    const catsInLevel = WORD_CATEGORIES.filter((c) => c.level === level.id);
+    const masteredInLevel = catsInLevel.filter(isCategoryMastered).length;
 
     viewEl.appendChild(el(`
-      <div class="level-header ${levelDone ? "done" : ""}">
-        <div class="level-title">${level.icon || ""} ${level.label}${levelDone ? " ✓ 完了" : ""}</div>
+      <div class="level-header">
+        <div class="level-title">${level.icon || ""} ${level.label}</div>
         <div class="level-desc">${level.desc}</div>
-        <div class="level-count">${levelCompletedCount} / ${stepsInLevel.length} 完了</div>
+        ${catsInLevel.length > 0 ? `<div class="level-count">📚 ${masteredInLevel} / ${catsInLevel.length} カテゴリをマスター</div>` : ""}
       </div>
     `));
 
-    stepsInLevel.forEach((step, index) => {
-      const done = isStepComplete(step);
-      const isNext = step === nextStep;
+    catsInLevel.forEach((cat) => {
+      const p = loadProgress()[cat.id];
+      const progressText = p ? `ベスト ${p.bestScore}/${cat.words.length}${isCategoryMastered(cat) ? " ✓マスター" : ""}` : "未挑戦";
       const card = el(`
-        <div class="step-card ${done ? "done" : ""} ${isNext ? "next" : ""}">
-          <div class="step-badge">${done ? "✓" : index + 1}</div>
-          <div class="step-body">
-            <div class="step-title">${step.title}${isNext ? '<span class="step-next-tag">次はこれ</span>' : ""}</div>
-            <div class="step-desc">${step.desc}</div>
+        <div class="category-card">
+          <div>
+            <div class="cat-name">${cat.name}</div>
+            <div class="cat-progress">${progressText}</div>
           </div>
+          <div>›</div>
         </div>
       `);
-      card.addEventListener("click", () => goToStep(step));
+      card.addEventListener("click", () => {
+        switchTab("words");
+        renderCategoryDetail(cat, "flashcard");
+      });
       viewEl.appendChild(card);
+    });
 
-      if (step.type === "manual") {
-        const toggleBtn = el(`<button class="step-toggle-btn">${done ? "完了を取り消す" : "完了にする"}</button>`);
-        toggleBtn.addEventListener("click", (evt) => {
-          evt.stopPropagation();
-          setStepComplete(step.id, !done);
-          renderHome();
-        });
-        card.querySelector(".step-body").appendChild(toggleBtn);
-      }
+    (level.links || []).forEach((link) => {
+      const card = el(`
+        <div class="category-card">
+          <div>
+            <div class="cat-name">${link.icon || ""} ${link.title}</div>
+            <div class="cat-progress">${link.desc}</div>
+          </div>
+          <div>›</div>
+        </div>
+      `);
+      card.addEventListener("click", () => goToChapterLink(link));
+      viewEl.appendChild(card);
     });
   });
 
@@ -350,42 +415,76 @@ function renderHome() {
   viewEl.appendChild(fileInput);
 }
 
-function goToStep(step) {
-  if (step.tab === "phrases" && step.id === "situations") {
+function goToChapterLink(link) {
+  if (link.situationMode) {
     phrasesViewMode = "situation";
     selectedSituation = null;
   }
-  switchTab(step.tab);
-  if (step.tab === "words" && step.categoryId) {
-    const cat = WORD_CATEGORIES.find((c) => c.id === step.categoryId);
-    if (cat) renderCategoryDetail(cat, "flashcard");
-  }
+  switchTab(link.tab);
 }
 
-function goToMistakeReview() {
+function goToReviewQueue() {
   switchTab("words");
-  renderMistakeReview();
+  renderReviewQueue();
 }
 
-function renderMistakeReview() {
+function renderReviewQueue() {
   viewEl.innerHTML = "";
   const back = el(`<button class="back-btn">‹ ホームに戻る</button>`);
   back.addEventListener("click", () => switchTab("home"));
   viewEl.appendChild(back);
-  viewEl.appendChild(el(`<div class="section-title">苦手な単語の復習</div>`));
+  viewEl.appendChild(el(`<div class="section-title">今日の復習</div>`));
+  viewEl.appendChild(buildTipBox("間隔をあけて復習すると記憶に残りやすくなります。正解した単語は次の復習まで間隔が伸び、間違えた単語は明日また出題されます。"));
 
-  const mistakeWords = getAllMistakeWords();
+  const dueGrammar = getDueGrammarLessons();
+  const dueSituations = getDueSituations();
+  if (dueGrammar.length > 0 || dueSituations.length > 0) {
+    viewEl.appendChild(el(`<div class="section-title" style="margin-top:0;">文法・会話</div>`));
+    dueGrammar.forEach((lesson) => {
+      const card = el(`
+        <div class="category-card">
+          <div>
+            <div class="cat-name">📘 ${lesson.title}</div>
+            <div class="cat-progress">文法タブで復習します</div>
+          </div>
+          <div>›</div>
+        </div>
+      `);
+      card.addEventListener("click", () => switchTab("grammar"));
+      viewEl.appendChild(card);
+    });
+    dueSituations.forEach((sit) => {
+      const card = el(`
+        <div class="category-card">
+          <div>
+            <div class="cat-name">🎭 ${sit.title}</div>
+            <div class="cat-progress">フレーズタブで復習します</div>
+          </div>
+          <div>›</div>
+        </div>
+      `);
+      card.addEventListener("click", () => {
+        phrasesViewMode = "situation";
+        selectedSituation = sit;
+        switchTab("phrases");
+      });
+      viewEl.appendChild(card);
+    });
+    viewEl.appendChild(el(`<div class="section-title">単語</div>`));
+  }
+
+  const dueWords = getDueReviewWords();
   const allWordsPool = WORD_CATEGORIES.flatMap((c) => c.words);
 
   viewEl.appendChild(
     buildQuiz(null, {
-      words: mistakeWords,
+      words: dueWords,
       pool: allWordsPool,
-      emptyMessage: "苦手な単語はありません。素晴らしいです!",
-      onCorrect: (w) => clearMistake(w.catId, w.kr),
-      onWrong: () => {},
+      emptyMessage: "今日復習する単語はありません。素晴らしいです!",
+      onCorrect: (w) => updateSrs(w.catId, w.kr, true),
+      onWrong: (w) => updateSrs(w.catId, w.kr, false),
       onFinish: () => {},
-      onRetry: () => renderMistakeReview(),
+      onRetry: () => renderReviewQueue(),
     })
   );
 }
@@ -722,9 +821,29 @@ function purposeKeyForMode(mode) {
   return Object.keys(WORD_PURPOSES).find((k) => WORD_PURPOSES[k].modes.includes(mode)) || "read";
 }
 
-let wordsSection = null; // null | "browse" | "practice"
-let wordsPurpose = null; // null | "read" | "listen" | "write" ("practice"時のみ使用)
-let browseCategoryId = null; // "browse"時のみ使用
+// 前回選んだ「調べる/問題」「目的」を端末に覚えておき、次に単語帳タブを開いたときは
+// 選択画面を飛ばして続きから入れるようにする(選び直したい場合は各画面の戻るボタンから)
+function loadWordsNav() {
+  try {
+    return JSON.parse(localStorage.getItem(WORDS_NAV_STORAGE_KEY)) || {};
+  } catch (e) {
+    return {};
+  }
+}
+function setWordsSection(section) {
+  wordsSection = section;
+  localStorage.setItem(WORDS_NAV_STORAGE_KEY, JSON.stringify({ section, purpose: wordsPurpose }));
+}
+function setWordsPurpose(purpose) {
+  wordsPurpose = purpose;
+  localStorage.setItem(WORDS_NAV_STORAGE_KEY, JSON.stringify({ section: wordsSection, purpose }));
+}
+
+const savedWordsNav = loadWordsNav();
+let wordsSection = savedWordsNav.section || null; // null | "browse" | "practice"
+let wordsPurpose = savedWordsNav.purpose || null; // null | "read" | "listen" | "write" ("practice"時のみ使用)
+let browseCategoryId = null; // "browse"時のみ使用(カテゴリまでは記憶しない)
+let browseOrderMode = "category"; // "category" | "alpha" — 単語帳を見るときの並び順(カテゴリ別 or 가나다順)
 
 function renderWordsHome() {
   viewEl.innerHTML = "";
@@ -759,7 +878,7 @@ function renderWordsSectionSelect() {
       </div>
     `);
     card.addEventListener("click", () => {
-      wordsSection = s.key;
+      setWordsSection(s.key);
       renderWordsHome();
     });
     viewEl.appendChild(card);
@@ -773,22 +892,88 @@ function renderWordsBrowseCategoryList() {
     renderWordsHome();
   });
   viewEl.appendChild(back);
-  viewEl.appendChild(el(`<div class="section-title">📋 単語帳: カテゴリを選んでください</div>`));
-  WORD_CATEGORIES.forEach((cat) => {
-    const card = el(`
-      <div class="category-card">
-        <div>
-          <div class="cat-name">${cat.name}</div>
-          <div class="cat-progress">${cat.words.length}語</div>
-        </div>
-        <div>›</div>
-      </div>
-    `);
-    card.addEventListener("click", () => {
-      browseCategoryId = cat.id;
+  viewEl.appendChild(el(`<div class="section-title">📋 単語帳: カテゴリを選ぶか、検索してください</div>`));
+
+  const orderToggle = el(`
+    <div class="mode-switch">
+      <button data-order="category" class="${browseOrderMode === "category" ? "active" : ""}">📂 カテゴリ別</button>
+      <button data-order="alpha" class="${browseOrderMode === "alpha" ? "active" : ""}">🔤 가나다順</button>
+    </div>
+  `);
+  orderToggle.querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      browseOrderMode = btn.dataset.order;
       renderWordsHome();
     });
-    viewEl.appendChild(card);
+  });
+  viewEl.appendChild(orderToggle);
+
+  const searchWrap = el(`
+    <div class="word-search-wrap">
+      <input type="search" class="word-search-input" placeholder="🔍 単語・読み方・意味で検索" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
+    </div>
+  `);
+  viewEl.appendChild(searchWrap);
+
+  const resultsWrap = el(`<div></div>`);
+  viewEl.appendChild(resultsWrap);
+
+  const listWrap = el(`<div></div>`);
+  viewEl.appendChild(listWrap);
+  if (browseOrderMode === "alpha") {
+    const allWords = [];
+    WORD_CATEGORIES.forEach((cat) => {
+      cat.words.forEach((w) => allWords.push({ w, catName: cat.name }));
+    });
+    allWords.sort((a, b) => (a.w.kr < b.w.kr ? -1 : a.w.kr > b.w.kr ? 1 : 0));
+    const alphaList = el(`<div class="word-list"></div>`);
+    allWords.forEach(({ w, catName }) => alphaList.appendChild(buildWordListItem(w, catName)));
+    listWrap.appendChild(alphaList);
+  } else {
+    WORD_CATEGORIES.forEach((cat) => {
+      const card = el(`
+        <div class="category-card">
+          <div>
+            <div class="cat-name">${cat.name}</div>
+            <div class="cat-progress">${cat.words.length}語</div>
+          </div>
+          <div>›</div>
+        </div>
+      `);
+      card.addEventListener("click", () => {
+        browseCategoryId = cat.id;
+        renderWordsHome();
+      });
+      listWrap.appendChild(card);
+    });
+  }
+
+  const input = searchWrap.querySelector(".word-search-input");
+  input.addEventListener("input", () => {
+    const q = input.value.trim();
+    resultsWrap.innerHTML = "";
+    if (!q) {
+      listWrap.style.display = "";
+      return;
+    }
+    listWrap.style.display = "none";
+    const matches = [];
+    WORD_CATEGORIES.forEach((cat) => {
+      cat.words.forEach((w) => {
+        if (w.kr.includes(q) || w.yomi.includes(q) || w.jp.includes(q)) {
+          matches.push({ ...w, catName: cat.name });
+        }
+      });
+    });
+    if (matches.length === 0) {
+      resultsWrap.appendChild(el(`<div class="empty-note">「${q}」に一致する単語が見つかりませんでした。</div>`));
+      return;
+    }
+    const list = el(`<div class="word-list"></div>`);
+    matches.forEach((w) => {
+      list.appendChild(buildWordListItem(w, w.catName));
+    });
+    resultsWrap.appendChild(list);
   });
 }
 
@@ -804,19 +989,90 @@ function renderWordListView(cat) {
 
   const list = el(`<div class="word-list"></div>`);
   cat.words.forEach((w) => {
-    const item = el(`
-      <div class="word-list-item">
-        <div class="word-list-main">
-          <div class="kr">${w.kr}<span class="speak-icon">🔊</span></div>
-          <div class="yomi-text">${w.yomi}</div>
-        </div>
-        <div class="word-list-jp">${w.jp}</div>
-      </div>
-    `);
-    item.querySelector(".speak-icon").addEventListener("click", () => speak(w.kr));
+    const item = buildWordListItem(w);
     list.appendChild(item);
   });
   viewEl.appendChild(list);
+}
+
+// 単語帳の一覧・検索結果で共通利用する1行分の部品。
+// 品詞・活用形・類義語/対義語・使い方の補足・例文(2〜3個)は、行をタップすると開く詳細パネルに表示する。
+function buildWordListItem(w, catName) {
+  const hasSyn = w.related && w.related.syn && w.related.syn.length > 0;
+  const hasAnt = w.related && w.related.ant && w.related.ant.length > 0;
+  const hasDetail = !!((w.forms && w.forms.length) || hasSyn || hasAnt || w.note || (w.ex && w.ex.length));
+
+  const item = el(`
+    <div class="word-list-item">
+      <div class="word-list-main-row ${hasDetail ? "expandable" : ""}">
+        <div class="word-list-main">
+          <div class="kr">${w.kr}<span class="speak-icon">🔊</span></div>
+          <div class="yomi-text">${w.yomi}${w.pos ? `<span class="pos-tag">${w.pos}</span>` : ""}${catName ? " ・ " + catName : ""}</div>
+        </div>
+        <div class="word-list-jp">${w.jp}${hasDetail ? '<span class="detail-arrow">›</span>' : ""}</div>
+      </div>
+    </div>
+  `);
+  item.querySelector(".speak-icon").addEventListener("click", (evt) => {
+    evt.stopPropagation();
+    speak(w.kr);
+  });
+
+  if (hasDetail) {
+    const detail = el(`<div class="word-list-detail" style="display:none;"></div>`);
+
+    if (w.forms && w.forms.length) {
+      const formsWrap = el(`<div class="word-forms"></div>`);
+      w.forms.forEach((f) => {
+        formsWrap.appendChild(el(`
+          <div class="word-form-row">
+            <span class="word-form-label">${f.label}</span>
+            <span class="word-form-value">${f.kr}<span class="word-form-yomi">(${f.yomi})</span></span>
+          </div>
+        `));
+      });
+      detail.appendChild(formsWrap);
+    }
+
+    if (hasSyn || hasAnt) {
+      const relWrap = el(`<div class="word-related"></div>`);
+      if (hasSyn) {
+        relWrap.appendChild(el(`<div class="word-related-row">🟰 類義語: ${w.related.syn.map((s) => `${s.kr}(${s.jp})`).join("、")}</div>`));
+      }
+      if (hasAnt) {
+        relWrap.appendChild(el(`<div class="word-related-row">↔️ 対義語: ${w.related.ant.map((s) => `${s.kr}(${s.jp})`).join("、")}</div>`));
+      }
+      detail.appendChild(relWrap);
+    }
+
+    if (w.note) {
+      detail.appendChild(el(`<div class="word-note">💡 ${w.note}</div>`));
+    }
+
+    if (w.ex && w.ex.length) {
+      const exWrap = el(`<div class="word-examples"></div>`);
+      w.ex.forEach((e) => {
+        exWrap.appendChild(el(`
+          <div class="word-list-example">
+            <div class="word-list-example-kr">${e.kr}</div>
+            <div class="word-list-example-sub">${e.yomi} ・ ${e.jp}</div>
+          </div>
+        `));
+      });
+      detail.appendChild(exWrap);
+    }
+
+    item.appendChild(detail);
+
+    let expanded = false;
+    item.querySelector(".word-list-main-row").addEventListener("click", () => {
+      expanded = !expanded;
+      detail.style.display = expanded ? "" : "none";
+      item.querySelector(".detail-arrow").textContent = expanded ? "⌄" : "›";
+    });
+  }
+
+  return item;
 }
 
 function renderWordsPurposeSelect() {
@@ -841,7 +1097,7 @@ function renderWordsPurposeSelect() {
       </div>
     `);
     card.addEventListener("click", () => {
-      wordsPurpose = key;
+      setWordsPurpose(key);
       renderWordsHome();
     });
     viewEl.appendChild(card);
@@ -888,8 +1144,9 @@ function renderWordsCategoryList(purposeKey) {
 function renderCategoryDetail(cat, mode = "flashcard") {
   viewEl.innerHTML = "";
   const purposeKey = purposeKeyForMode(mode);
-  wordsSection = "practice"; // 直接リンクされた場合も「戻る」の行き先を練習側に揃える
-  wordsPurpose = purposeKey;
+  // 直接リンクされた場合(学習コースのステップなど)も、次回の「戻る」の行き先・記憶した続きを練習側に揃える
+  setWordsSection("practice");
+  setWordsPurpose(purposeKey);
   const purpose = WORD_PURPOSES[purposeKey];
 
   const back = el(`<button class="back-btn">‹ ${purpose.icon} ${purpose.label}のカテゴリ一覧に戻る</button>`);
@@ -1044,7 +1301,12 @@ function buildFlashcards(cat) {
       <div class="flashcard ${flipped ? "flipped" : ""}">
         <div class="main-text">${word.kr}</div>
         <div class="yomi-text">${word.yomi}</div>
-        <div class="sub-text">${word.jp}</div>
+        <div class="sub-text">${word.jp}${word.pos ? `<span class="pos-tag">${word.pos}</span>` : ""}</div>
+        ${
+          word.ex && word.ex.length
+            ? `<div class="example-text"><div>${word.ex[0].kr}</div><div class="example-sub">${word.ex[0].yomi} ・ ${word.ex[0].jp}</div></div>`
+            : ""
+        }
         <div class="hint">${flipped ? "タップで韓国語に戻る" : "タップで意味を表示"}</div>
       </div>
     `);
@@ -1178,7 +1440,8 @@ function buildQuiz(cat, opts) {
 function renderGrammar() {
   viewEl.innerHTML = "";
   GRAMMAR_LESSONS.forEach((lesson) => {
-    viewEl.appendChild(el(`<div class="section-title">${lesson.title}</div>`));
+    const due = isGrammarDue(lesson.id);
+    viewEl.appendChild(el(`<div class="section-title">${lesson.title}${due ? '<span class="due-tag">🔁復習</span>' : ""}</div>`));
     viewEl.appendChild(el(`<div class="grammar-explanation">${lesson.explanation}</div>`));
     if (lesson.tip) viewEl.appendChild(buildTipBox(lesson.tip));
     lesson.points.forEach((point) => {
@@ -1193,6 +1456,7 @@ function renderGrammar() {
       card.querySelector(".speak-icon").addEventListener("click", () => speak(point.kr));
       viewEl.appendChild(card);
     });
+    viewEl.appendChild(buildSelfRateRow("grammar", lesson.id));
   });
 }
 
@@ -1244,10 +1508,11 @@ function renderPhrases() {
 function renderSituationList() {
   viewEl.appendChild(el(`<div class="section-title">場面を選んでください</div>`));
   SITUATIONS.forEach((sit) => {
+    const due = isSituationDue(sit.id);
     const card = el(`
       <div class="category-card">
         <div>
-          <div class="cat-name">${sit.title}</div>
+          <div class="cat-name">${sit.title}${due ? '<span class="due-tag">🔁復習</span>' : ""}</div>
           <div class="cat-progress">${sit.desc}</div>
         </div>
         <div>›</div>
@@ -1289,6 +1554,7 @@ function renderSituationDialogue(sit) {
     dialogueWrap.appendChild(bubble);
   });
   viewEl.appendChild(dialogueWrap);
+  viewEl.appendChild(buildSelfRateRow("situation", sit.id));
 }
 
 // ==== 初期表示 ====

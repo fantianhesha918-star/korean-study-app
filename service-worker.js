@@ -1,4 +1,4 @@
-const CACHE_NAME = "kr-study-cache-v20";
+const CACHE_NAME = "kr-study-cache-v24";
 const ASSETS = [
   "./",
   "./index.html",
