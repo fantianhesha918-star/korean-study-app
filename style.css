@@ -214,6 +214,11 @@ html, body {
 }
 .word-list-main .kr { font-weight: 700; font-size: 1rem; }
 .word-list-main .yomi-text { color: var(--accent); font-size: 0.8rem; margin-top: 2px; }
+.star-badge {
+  display: inline-block;
+  font-size: 0.85em;
+  margin-right: 3px;
+}
 .pos-tag {
   display: inline-block;
   font-size: 0.68rem;

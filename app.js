@@ -1006,7 +1006,7 @@ function buildWordListItem(w, catName) {
     <div class="word-list-item">
       <div class="word-list-main-row ${hasDetail ? "expandable" : ""}">
         <div class="word-list-main">
-          <div class="kr">${w.kr}<span class="speak-icon">🔊</span></div>
+          <div class="kr">${w.common ? '<span class="star-badge" title="よく使う">⭐</span>' : ""}${w.kr}<span class="speak-icon">🔊</span></div>
           <div class="yomi-text">${w.yomi}${w.pos ? `<span class="pos-tag">${w.pos}</span>` : ""}${catName ? " ・ " + catName : ""}</div>
         </div>
         <div class="word-list-jp">${w.jp}${hasDetail ? '<span class="detail-arrow">›</span>' : ""}</div>
@@ -1299,7 +1299,7 @@ function buildFlashcards(cat) {
 
     const card = el(`
       <div class="flashcard ${flipped ? "flipped" : ""}">
-        <div class="main-text">${word.kr}</div>
+        <div class="main-text">${word.common ? '<span class="star-badge" title="よく使う">⭐</span>' : ""}${word.kr}</div>
         <div class="yomi-text">${word.yomi}</div>
         <div class="sub-text">${word.jp}${word.pos ? `<span class="pos-tag">${word.pos}</span>` : ""}</div>
         ${
@@ -1447,7 +1447,7 @@ function renderGrammar() {
     lesson.points.forEach((point) => {
       const card = el(`
         <div class="phrase-card">
-          <div class="grammar-pattern">${point.pattern}</div>
+          <div class="grammar-pattern">${point.common ? '<span class="star-badge" title="よく使う">⭐</span>' : ""}${point.pattern}</div>
           <div class="kr">${point.kr}<span class="speak-icon">🔊</span></div>
           <div class="yomi-text">${point.yomi}</div>
           <div class="jp">${point.jp}</div>
